@@ -1,5 +1,4 @@
 import { exec, execSync, spawn, spawnSync } from 'node:child_process';
-import { Log } from './functions.ts';
 import { _STARTING_PORT, _MAX_CONTAINERS, _BASE_URL } from './index.js';
 import { promisify } from 'node:util';
 
@@ -8,7 +7,7 @@ interface RunningApps {
     port: number;
 }
 
-const check_running_apps = async () => {
+export const check_running_apps = async () => {
     Log.system('running check_running_apps()');
     
     const running_apps: RunningApps[] = [];
@@ -47,11 +46,13 @@ const check_running_apps = async () => {
     running_apps.map((app)=>{
         return Log.system(`name: ${app.name} | PORT: ${app.port}`)
     })
-    return running_apps;
+    const pm2log = await run_command('pm2 log')
+    const pm2status = await run_command('pm2 status')
+    return {pm2log,running_apps, pm2status};
 };
 
 
-const run_command = async (command:string)=>{
+export const run_command = async (command:string)=>{
    const execAsync = promisify(exec)
 
     // const child = await execAsync(`${command}`)
@@ -60,10 +61,74 @@ const run_command = async (command:string)=>{
     
     if(child.stderr)Log.error('system.ts', child.stderr)
     
-    return Log.system(child.stdout)
+    Log.system(child.stdout) 
+    return child.stdout
+}
+
+
+
+
+export class Container{
     
-    
+    public processId:number = 0;
+    public port:number = 0;
+    public container:any = {};
+
+    public constructor(name: string){
+        this.container.port =this.port
+        this.container.processId = this.processId
+        this.container = name;
+
+        return this.container;
+    }
+    static start(){
+        
+    }
+    static stop(){
+
+    }
+    static check(){
+
+    }
+
+
 
 }
 
-export { check_running_apps , run_command}; 
+
+
+
+export const getDate = ()=>{
+    const date = new Date();
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    const formated = `${year}-${month}-${day} ${hours}:${minutes}`
+    return`[${formated}]: > `
+}
+
+
+
+export class Log{
+
+    constructor(log: string){
+        console.log(`${getDate()}: > ${log}`);
+    }
+
+    static system = (text: string)=>{
+        const formatedlog = `${getDate()} - [system]: > ${text}`
+        return console.log(formatedlog)
+    }
+
+   static error = (filename:string, text: string)=>{
+        const formatedlog = `${getDate()} - [error]${filename}: >${text}`
+        return formatedlog
+    }
+    
+
+
+}

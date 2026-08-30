@@ -1,8 +1,8 @@
 import Express from "express";
 import dotenv from "dotenv"
 import cors from 'cors'
-import {check_running_apps, run_command} from './system.ts'
-import { Log } from "./functions.ts";
+import {check_running_apps, Container, run_command} from './system.ts'
+import { Log } from "./system.ts";
 
 //config api gateway
 dotenv.config();
@@ -16,6 +16,8 @@ export const _MAX_CONTAINERS = 10;
 export const _BASE_URL = process.env.BASE_URL || 'http://localhost:' //the base url without port 
 
 /////////////////////////////////
+const container = new Container("microservice");
+console.log(container)
 
 
 api.use(Express.json())
@@ -25,7 +27,7 @@ api.use(cors())
 api.get('/', async (req, res) => {
     new Log('request received')
     const running_apps = await check_running_apps()
-    res.json({ok: true, running_apps})
+    res.json({ok: true, running_apps})  
 })
 
 
