@@ -6,10 +6,11 @@ require('dotenv').config()
 //globals
 const api = express()
 const PORT = process.env.PORT || 8001;
+const name = process.env.NAME || "no name";
 
 //api
 api.get('/name', (req,res)=>{
-    res.json({name: "authenticator"})
+    res.json({name})
 })
 
 //engine

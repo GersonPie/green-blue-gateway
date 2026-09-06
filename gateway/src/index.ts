@@ -1,7 +1,8 @@
 import Express from "express";
 import dotenv from "dotenv"
 import cors from 'cors'
-import {check_running_apps, Container, run_command} from './system.ts'
+import {check_running_apps, run_command} from './system.ts'
+import { Container } from "./Instace.ts";
 import { Log } from "./system.ts";
 
 //config api gateway
@@ -14,11 +15,25 @@ export const PORT = process.env.PORT || 8000;
 export const _STARTING_PORT = 8001;
 export const _MAX_CONTAINERS = 10;
 export const _BASE_URL = process.env.BASE_URL || 'http://localhost:' //the base url without port 
+export const defaultRunnigContainersPath = 'RunningContainers'
 
 /////////////////////////////////
-const container = new Container("microservice");
-console.log(container)
 
+
+///////////////////////////////////
+api.listen(PORT, (err) => {
+
+    if (err) return console.log(err)
+    console.log(`[gateway] - running on ${_BASE_URL}${PORT}/`)
+})
+//////////////////////////////////
+const container = new Container('microservices')
+console.log(container)
+console.log(await container.start())
+
+const redisDB = new Container('redis-db')
+console.log(redisDB)
+console.log(await redisDB.start())
 
 api.use(Express.json())
 
@@ -53,9 +68,5 @@ api.post('/start', async(req,res)=>{
 
 })
 //engine 
-api.listen(PORT, (err) => {
 
-    if (err) return console.log(err)
-    console.log(`[gateway] - running on ${_BASE_URL}${PORT}/`)
-})
 ///////////////////////////////////

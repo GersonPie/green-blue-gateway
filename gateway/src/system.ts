@@ -1,10 +1,31 @@
-import { exec, execSync, spawn, spawnSync } from 'node:child_process';
+import { exec } from 'node:child_process';
 import { _STARTING_PORT, _MAX_CONTAINERS, _BASE_URL } from './index.js';
 import { promisify } from 'node:util';
 
 interface RunningApps {
-    name: unknown;
+    name: string;
     port: number;
+}
+
+export const freePort = async()=>{
+
+    for (let portIndex = 0; portIndex < _MAX_CONTAINERS; portIndex++) {
+
+        const port = _STARTING_PORT + portIndex
+        try {
+            new Log(`[FreePort] - trying port ${port}...`)
+            const response = await fetch(`http://localhost:${port}/name`);
+            if(response.ok) {
+                const data =  await response.json()
+                new Log(`[FreePort] - Port ${port} is busy with [${data?.name}], trying next...`);
+            }
+        } catch (err) {
+            new Log(`[FreePort] - assigning instance on port:${port}...`);
+            return port;
+        }
+    }
+    new Log(`[FreePort] - all ports are busy! add more room in max_ports`)
+    
 }
 
 export const check_running_apps = async () => {
@@ -15,8 +36,6 @@ export const check_running_apps = async () => {
     for (let i = 0; i < _MAX_CONTAINERS; i++) {
 
         const port = _STARTING_PORT + i;
-
-    
 
         try {
             const response = await fetch(
@@ -51,52 +70,16 @@ export const check_running_apps = async () => {
     return {pm2log,running_apps, pm2status};
 };
 
-
 export const run_command = async (command:string)=>{
    const execAsync = promisify(exec)
-
-    // const child = await execAsync(`${command}`)
     
     const child = await execAsync(`${command}`)
     
     if(child.stderr)Log.error('system.ts', child.stderr)
     
-    Log.system(child.stdout) 
-    return child.stdout
+    Log.system(child.stdout);
+    return child.stdout;
 }
-
-
-
-
-export class Container{
-    
-    public processId:number = 0;
-    public port:number = 0;
-    public container:any = {};
-
-    public constructor(name: string){
-        this.container.port =this.port
-        this.container.processId = this.processId
-        this.container = name;
-
-        return this.container;
-    }
-    static start(){
-        
-    }
-    static stop(){
-
-    }
-    static check(){
-
-    }
-
-
-
-}
-
-
-
 
 export const getDate = ()=>{
     const date = new Date();
@@ -125,10 +108,7 @@ export class Log{
     }
 
    static error = (filename:string, text: string)=>{
-        const formatedlog = `${getDate()} - [error]${filename}: >${text}`
-        return formatedlog
+        const formatedlog = `${getDate()} - [error]${filename}: > ${text}`
+        return console.error(formatedlog)
     }
-    
-
-
 }
