@@ -33,7 +33,7 @@ if (reachable) {
 if (!reachable) {
     if (process.env.GATEWAY_URL) throw new Error('Configured GATEWAY_URL is unavailable');
     gateway = fork(`${gatewayRoot}/dist/index.js`, [], { cwd: gatewayRoot, env: process.env, stdio: 'inherit' });
-    for (let attempt = 0; attempt < 50; attempt++) {
+    for (let attempt = 0; attempt < 300; attempt++) {
         if (gateway.exitCode !== null) throw new Error('Gateway failed to start');
         try { if ((await fetch(`${target}/health`, { signal: AbortSignal.timeout(1000) })).ok) { reachable = true; break; } } catch {}
         await new Promise((resolve) => setTimeout(resolve, 100));

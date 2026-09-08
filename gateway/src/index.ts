@@ -8,7 +8,15 @@ if (!config.managementToken) throw new Error('Set MANAGEMENT_TOKEN in gateway/.e
 const manager = new ContainerManager();
 const platform = new Platform(manager);
 await platform.initialize();
-const auth = new Auth(process.env.DATABASE_URL ? new PrismaAuthStore(process.env.DATABASE_URL) : undefined);
+const databaseUrl = process.env.DATABASE_URL || (process.env.DB_PASWORD
+    ? (() => {
+        const url = new URL('mysql://root@127.0.0.1:3306/gateway_auth');
+        url.password = process.env.DB_PASWORD;
+        console.warn('DB_PASWORD is deprecated; replace it with DATABASE_URL in gateway/.env');
+        return url.toString();
+    })()
+    : undefined);
+const auth = new Auth(databaseUrl ? new PrismaAuthStore(databaseUrl) : undefined);
 const server = createApp(manager, platform, auth).listen(config.port, config.host, () => console.log(`Gateway listening at http://${config.host}:${config.port}`));
 server.on('error', (error) => { console.error(error); process.exitCode = 1; });
 let closing = false;
