@@ -1,114 +1,16 @@
-import { exec } from 'node:child_process';
-import { _STARTING_PORT, _MAX_CONTAINERS, _BASE_URL } from './index.js';
-import { promisify } from 'node:util';
-
-interface RunningApps {
-    name: string;
-    port: number;
+import { createServer } from 'node:net';
+export async function portAvailable(port: number): Promise<boolean> {
+    return new Promise((resolve) => {
+        const server = createServer();
+        server.once('error', () => resolve(false));
+        server.listen(port, '127.0.0.1', () => server.close(() => resolve(true)));
+    });
 }
-
-export const freePort = async()=>{
-
-    for (let portIndex = 0; portIndex < _MAX_CONTAINERS; portIndex++) {
-
-        const port = _STARTING_PORT + portIndex
-        try {
-            new Log(`[FreePort] - trying port ${port}...`)
-            const response = await fetch(`http://localhost:${port}/name`);
-            if(response.ok) {
-                const data =  await response.json()
-                new Log(`[FreePort] - Port ${port} is busy with [${data?.name}], trying next...`);
-            }
-        } catch (err) {
-            new Log(`[FreePort] - assigning instance on port:${port}...`);
-            return port;
-        }
-    }
-    new Log(`[FreePort] - all ports are busy! add more room in max_ports`)
-    
+export async function healthy(port: number): Promise<boolean> {
+    try {
+        const response = await fetch(`http://127.0.0.1:${port}/health`, { signal: AbortSignal.timeout(500) });
+        await response.body?.cancel();
+        return response.ok;
+    } catch { return false; }
 }
-
-export const check_running_apps = async () => {
-    Log.system('running check_running_apps()');
-    
-    const running_apps: RunningApps[] = [];
-
-    for (let i = 0; i < _MAX_CONTAINERS; i++) {
-
-        const port = _STARTING_PORT + i;
-
-        try {
-            const response = await fetch(
-                `${_BASE_URL}${port}/name`
-            );
-
-            if (response.ok) {
-                const data = await response.json();
-                
-                running_apps.push({
-                    port,
-                    ...data
-                });
-            }
-
-            else {
-                Log.system(`${port} is offline`)
-            }
-        } catch (err) {
-            Log.error(
-                'system.ts',
-                `error occurred while fetching ${_BASE_URL}${port}/name`
-            );
-        }
-    }
-    Log.system(`👍found ${running_apps.length} running containers`)
-    running_apps.map((app)=>{
-        return Log.system(`name: ${app.name} | PORT: ${app.port}`)
-    })
-    const pm2log = await run_command('pm2 log')
-    const pm2status = await run_command('pm2 status')
-    return {pm2log,running_apps, pm2status};
-};
-
-export const run_command = async (command:string)=>{
-   const execAsync = promisify(exec)
-    
-    const child = await execAsync(`${command}`)
-    
-    if(child.stderr)Log.error('system.ts', child.stderr)
-    
-    Log.system(child.stdout);
-    return child.stdout;
-}
-
-export const getDate = ()=>{
-    const date = new Date();
-
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-    const day = String(date.getDate()).padStart(2, '0');
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    const seconds = String(date.getSeconds()).padStart(2, '0');
-    const formated = `${year}-${month}-${day} ${hours}:${minutes}`
-    return`[${formated}]: > `
-}
-
-
-
-export class Log{
-
-    constructor(log: string){
-        console.log(`${getDate()}: > ${log}`);
-    }
-
-    static system = (text: string)=>{
-        const formatedlog = `${getDate()} - [system]: > ${text}`
-        return console.log(formatedlog)
-    }
-
-   static error = (filename:string, text: string)=>{
-        const formatedlog = `${getDate()} - [error]${filename}: > ${text}`
-        return console.error(formatedlog)
-    }
-}
+ 

@@ -14,10 +14,12 @@ api.get('/name', (req,res)=>{
 })
 
 //engine
-api.listen(PORT, (error)=>{
+api.get('/health', (_req, res) => res.json({ ok: true }));
+const server = api.listen(Number(PORT), process.env.HOST || '127.0.0.1', ()=>{
 
     console.log('system running on port ', PORT)
-    if(error){
-        console.log('error', error)
-    }
 })
+server.on('error', (error) => { console.error(error); process.exit(1); });
+process.on('SIGTERM', () => server.close(() => process.exit(0)));
+process.on('SIGINT', () => server.close(() => process.exit(0)));
+process.on('disconnect', () => server.close(() => process.exit(0)));
